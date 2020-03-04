@@ -16,17 +16,25 @@ public class CityDaoJDBC implements CityDao {
     private static final String UPDATE = "UPDATE city SET Name=?,CountryCode=?,District=?,Population=? WHERE city.ID=?";
     private static final String DELETE = "DELETE FROM city WHERE city.ID = ?";
 
-    @Override
-    public City findById(int id) throws SQLException {
-        City city;
-        Connection connection = getConnection();
-            PreparedStatement statement = connection.prepareStatement(FIND_BY_ID);
-        statement.setInt(1,id);
-            ResultSet rs = statement.executeQuery();
+    private PreparedStatement create_findById(Connection connection, int id) throws SQLException {
+        PreparedStatement statement = connection.prepareStatement(FIND_BY_ID);
+        statement.setInt(1, id);
+        return statement;
+    }
 
+    @Override
+    public City findById(int id) {
+        City city = null;
+        try (
+                Connection connection = Database.getConnection();
+                PreparedStatement statement = create_findById(connection, id)
+        ){
+            ResultSet rs = statement.executeQuery();
             rs.next();
             city = createCityFromResultSet(rs);
-
+        }catch (SQLException e){
+            e.printStackTrace();
+        }
 
         return city;
     }
@@ -71,7 +79,7 @@ public class CityDaoJDBC implements CityDao {
     }
 
     @Override
-    public List<City> findAll() throws SQLException {
+    public List<City> findAll() {
         List<City> city = new ArrayList<>();
         try(Connection connection = getConnection();
             PreparedStatement statement = connection.prepareStatement(FIND_ALL);
@@ -81,6 +89,8 @@ public class CityDaoJDBC implements CityDao {
             while (rs.next()){
                 city.add(createCityFromResultSet(rs));
             }
+        }catch (SQLException e){
+            e.printStackTrace();
         }
         return city;
     }
@@ -147,7 +157,7 @@ public class CityDaoJDBC implements CityDao {
     }
 
     @Override
-    public int delete(City city) throws NullPointerException, SQLException {
+    public int delete(City city) throws NullPointerException {
         int deletedCities = 0;
         try(Connection connection = getConnection();
             PreparedStatement statement = connection.prepareStatement(DELETE)
